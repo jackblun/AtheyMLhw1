@@ -5,6 +5,9 @@
 # Stanford University
 # Spring 2017
 
+
+# Section numbers correspond to assignment page
+
 ############################################################
 
 # set your working directory
@@ -50,4 +53,14 @@ summary(out_amountgive) # amount given. Highly skewed
 hist(out_amountgive)
 hist(out_amountgive[out_amountgive<=10])
 
+### 1. Regression for average treatment effect
+
+reg_ols <- lm(out_amountgive ~ treatment) 
+summary(reg_ols) # show results, significant at 90% but not 95% level
+
+# Consistent with Table 4 of paper
+
+confint(reg_ols, level=0.95) # CI
+
 ### 
+
