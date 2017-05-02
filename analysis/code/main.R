@@ -9,7 +9,7 @@
 
 # set your working directory
 
-setwd("C:\\Users\\Jack\\Dropbox\\Documents\\Stanford\\Courses\\Econometrics 3\\Assignments\\Assignment 4")
+setwd("C:\\Users\\Jack\\Documents\\Git\\Athey ML homework 1\\AtheyMLhw1")
 
 # clear things in RStudio
 
@@ -26,3 +26,6 @@ set.seed(12345)
 
 ############################################################
 
+# Load data
+
+char <- read.csv("analysis\\input\\charitable_withdummyvariables.csv")
