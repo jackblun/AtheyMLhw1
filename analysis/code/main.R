@@ -13,7 +13,7 @@
 # set your working directory
 
 setwd("C:\\Users\\Jack\\Documents\\Git\\Athey ML homework 1\\AtheyMLhw1") # Jack
-setwd('/home/luis/Downloads/AtheyMLhw1') #Luis
+#setwd('/home/luis/Downloads/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -30,7 +30,7 @@ set.seed(12345)
 ############################################################
 
 # Load data
-#let's use / instead of \\ since it should be compatible with both systems (Unix/Windows)
+#let's use / instead of \\ since it should be compatible with both systems (Unix/Windows) #JB: Noted! (I'm new to PC..!)
 fname <- 'analysis/input/charitable_withdummyvariables.csv'
 char <- read.csv(fname)
 attach(char) # attach so don't have to call each time
@@ -215,5 +215,53 @@ char.censored$bias <- bias.fcn(char.censored$ps.true,char.censored$treatment,
 ggplot(char.censored,aes(x=bias)) +geom_histogram(fill=I("white"),col=I("black"))
 E.bias = mean(char.censored$bias)/mean(char.censored$treatment)*(1-mean(char.censored$treatment))
 print(E.bias)
+
 ############################################################
 ### 3.
+
+
+# propensity score weighting ATE
+
+
+char.censored$w.ate[char.censored$treatment == 1] <-  1/char.censored$ps.true[char.censored$treatment == 1]
+char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.true[char.censored$treatment == 0]))
+
+  
+pweight.reg <- lm(out_amountgive ~ treatment, weights = w.ate, data = char.censored)
+summary(pweight.reg)
+
+# direct regression analysis ATE;
+
+# traditional double robust analysis weighting using inverse propensity score weighting; the lm command in R has a weights option.
+
+# lasso or regularized logistic regression (optionally try CART or randomforest --classification trees, or classification forests), to estimate the propensity scoreand re-estimate the ATE using the methods above.
+
+
+# a single-equation lasso of Y on X and W to estimate the ATE. Note that there is an option to not penalize the treatment indicator. You may
+#wish to use that option anyway so that the treatment effect estimate is not
+#shrunk. See http://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html for
+#the syntax for setting penalties for some coefficients to 0.
+
+
+#Next try using the Belloni-Chernozhukov-Hansen method, where you use the lasso to select variables with non-zero coefficients from the propensity equation and the
+#outcome equation, take the union of the two sets, and finally run OLS. You can either
+#use cross-validation to choose lambda in each case, or you can follow the approaches
+#suggested by BCH (those are more complicated but probably doesn't make a
+#                  difference).
+
+
+# Look at how your ATE coefficient changes with regularization
+# Consider the single-equation LASSO of Y on X and W. Similar to the plot
+# included in the handout, plot how the coefficient on the treatment indicator
+# changes with lambda. Interpret your findings. (See http://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html for some sample code on plotting.)
+
+############################################################
+### 4.
+
+# double machine learning to estimate the ATE. Specifically, use a LASSO or random forest to estimate regressions of Y on X and separately Y on W. Then, run a residual on
+# residual regression.
+
+
+# Use approximate residual balancing (package: http://github.com/swager/balanceHD) to estimate ATE
+
+# Compare and interpret your results
