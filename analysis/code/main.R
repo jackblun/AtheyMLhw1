@@ -13,7 +13,7 @@
 # set your working directory
 
 setwd("C:\\Users\\Jack\\Documents\\Git\\Athey ML homework 1\\AtheyMLhw1") # Jack
-
+setwd('/home/luis/Downloads/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -30,8 +30,9 @@ set.seed(12345)
 ############################################################
 
 # Load data
-
-char <- read.csv("analysis\\input\\charitable_withdummyvariables.csv")
+#let's use / instead of \\ since it should be compatible with both systems (Unix/Windows)
+fname <- 'analysis/input/charitable_withdummyvariables.csv'
+char <- read.csv(fname)
 attach(char) # attach so don't have to call each time
 
 
@@ -43,9 +44,12 @@ head(char) # Look at first few entries of each var
 
 # Treatment
 
-summary(treatment) # This var seems to pool treatments
+summary(treatment) # Anyone who got any of the 27 treatments (3 match x 3 match size x 3 reccomended amount)
 mean(treatment) # 67% treated
 
+
+# Gives at all
+summary(out_gavedum)
 
 # Giving
 
@@ -58,10 +62,14 @@ hist(out_amountgive[out_amountgive<=10])
 
 reg_ols <- lm(out_amountgive ~ treatment) 
 summary(reg_ols) # show results, significant at 90% but not 95% level
-
 # Consistent with Table 4 of paper
-
 confint(reg_ols, level=0.95) # CI
+
+#probit regression
+gave_probit <- glm(out_gavedum ~ treatment,family=binomial(link='probit'))
+#convert coef to derivative
+marginal.effect <- mean(dnorm(predict(gave_probit, type = "link")))*coef(gave_probit)
+print(marginal.effect)
 
 ############################################################
 ### 2. Dropping some observations
@@ -76,37 +84,77 @@ hist(page18_39[page18_39_missing!=1])
 summary(perbush)
 hist(perbush[perbush_missing!=1])
 
-
-char_res <- char[ which(page18_39_missing!=1 
-                         & perbush_missing!=1), ] # drop all those with missings of key variables
-#attach(char_res) # attach so don't have to call each time
+#LA: added that we remove ppl missing income info
+char_res <- char[ which(page18_39!=-999
+                         & perbush!=-999
+                         & median_hhincome!=-999), ] # drop all those with missings of key variables
+detach(char)
+attach(char_res) # attach so don't have to call each time
 
 char_res$drop <- 0 # variable telling us to drop or not
 
 # Make threshold rule for dropping (alternatively do with random variable)
 char_res$thres <- perbush #+ 0.1*(1+perbush)^2 - 0.1*page18_39*perbush #- page18_39 - page18_39^2 + perbush^2
-
 summary(char_res$thres)
-
 char_res$drop[char_res$thres <= 0.5] <- 1
-
 mean(char_res$drop) # drop 23 % of obs
-
 char_res_d <- char_res[which(char_res$drop == 0),]
 
+##############################
+#Alternative rule: 
+#randomly censor individuals
+#via a  complex, highly nonlinear fcn  of votes 4 bush in state,
+#
+
+ps.fcn <- function(v,c,pg,t){
+  v_t <- (v-.25)/.5
+  v_t <- v
+  ihs_pg <- log(pg + sqrt(pg ^ 2 + 1))/5
+  
+  #p<- ((2*c*(t*acos(v_t)) + (1-t)*atan(v_t^2))  - .5*exp(v_t) + t*((ihs_i)^4)/4 + (1-t)*(i/10000))/4
+  p<- (c*(acos(v_t))*atan(v_t^2)  - .5*exp(v_t))/4 + (t*((ihs_pg)) + (1-t))/2
+  p<- pmin(pmax(0,p),1)
+  return(p)
+}
+#story to accompany this fcn: ACLU wants to help those in trouble in "red states" but do not 
+#feel they can make a difference in really, really red states so target donors less often
+plot(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,800,1),ylim=c(0,1))#a plot of the function
+lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,800,0))
+lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,200,1))
+#char$mibush=char$perbush==-999
+#char$perbush[char$mibush]=.5
+char_res$ps.true <- ps.fcn(char_res$perbush,char_res$cases,char_res$hpa,char_res$treatment)
+ggplot(char_res,aes(x=ps.true))+ stat_ecdf()
+set.seed(21) 
+selection <- runif(nrow(char_res)) <= char_res$ps.true
+char.censored <- char_res[selection,] #remove observations via propensity score rule
+ggplot(char_res,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
+ggplot(char.censored,aes(x=ps.true)) + geom_histogram() +xlim(c(0,1))
+
+#overlap in true propensity score
+ggplot(char.censored,aes(x=ps.true,colour=factor(treatment))) + stat_ecdf()
+ggplot(char.censored,aes(x=ps.true,y=hpa,colour=factor(treatment))) + geom_point()
+#there is clear overlap, but clearly assymetries going on with hpa as well
+#End of Added PS Section by LA
+#################################
 
 # New regression results with dropping
+
+#jack's threshold rule
 reg_ols_drop <- lm(out_amountgive ~ treatment, data = char_res_d) 
 summary(reg_ols_drop) 
+
+#Luis' PS generating rule
+reg_censored <- lm(out_amountgive ~ treatment, data = char.censored) 
+summary(reg_censored) 
 
 # Old regression results (remember to drop missings to make comparable sample)
 reg_ols_comp <- lm(out_amountgive ~ treatment, data = char_res) 
 summary(reg_ols_comp) 
 
+
 # Check overlap (propensity score)
-
 # estimate propensity score via logit regression
-
 ps_mod <- glm(treatment ~ page18_39 + perbush,
               family = binomial(), data = char_res_d)
 summary(ps_mod)
@@ -127,5 +175,45 @@ ps_df %>%
   xlab("Probability of treatment") +
   theme_bw()
 
+#################################
+#Bias function under luis' PS rule
+#since we have some continuous covariates,
+#use the Mahalanobis distance to get conditional means
+#in a 'neighborhood' of each set of X's
+bias.fcn <- function(ps,treat,y, covars){
+  x<- covars
+  #stdize covariates to be z-scores mean 0 sd 1
+  for (j in 1:ncol(covars)){
+    x[,j] = (x[,j] - mean(x[,j]) )/sd(x[,j])
+  }
+  covx<- cov(x)
+  bias <- matrix(NaN,nrow=length(y),ncol=1)
+  mu.t <- mean(y[treat])
+  mu.c <- mean(y[!treat])
+  p <- mean(treat)
+  for (i in 1:length(y)){
+    if (i%%1000==0){
+      print(i)
+    }
+    maxdist<- .1 #the max Mahalanobis distance
+    #to compute conditional means for bias function
+    distances <- mahalanobis(x,center=x[i],cov<-covx)
+    while (length(y[distances <= maxdist & treat]) == 0 | 
+           length(y[distances <= maxdist & !treat]) == 0){
+        maxdist <- maxdist+.1
+    }
+    mu.t.X = mean(y[distances <= maxdist & treat])
+    mu.c.X = mean(y[distances <= maxdist & !treat])
+    bias[i] <- (ps[i]-p)*( p*(mu.c.X-mu.c) + (1-p)*(mu.t.X-mu.t)  )
+  }
+  
+  return(bias)
+}
+covars <- cbind(char.censored$hpa,char.censored$cases,char.censored$perbush)
+char.censored$bias <- bias.fcn(char.censored$ps.true,char.censored$treatment,
+                 char.censored$out_amountgive, covars)
+ggplot(char.censored,aes(x=bias)) +geom_histogram(fill=I("white"),col=I("black"))
+E.bias = mean(char.censored$bias)/mean(char.censored$treatment)*(1-mean(char.censored$treatment))
+print(E.bias)
 ############################################################
 ### 3.
