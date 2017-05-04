@@ -12,8 +12,8 @@
 
 # set your working directory
 
-#setwd("C:\\Users\\Jack\\Documents\\Git\\Athey ML homework 1\\AtheyMLhw1") # Jack
-setwd('/home/luis/AtheyMLhw1') #Luis
+setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
+#setwd('/home/luis/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -25,13 +25,15 @@ library(ggplot2)
 library(dplyr)
 library(reshape2)
 library(glmnet)
+library(plotmo)
+library(balanceHD)
+
 # set seed
 set.seed(12345)
 
 ############################################################
 
 # Load data
-#let's use / instead of \\ since it should be compatible with both systems (Unix/Windows) #JB: Noted! (I'm new to PC..!)
 fname <- 'analysis/input/charitable_withdummyvariables.csv'
 char <- read.csv(fname)
 attach(char) # attach so don't have to call each time
@@ -44,7 +46,6 @@ names(char)
 head(char) # Look at first few entries of each var
 
 # Treatment
-
 summary(treatment) # Anyone who got any of the 27 treatments (3 match x 3 match size x 3 reccomended amount)
 mean(treatment) # 67% treated
 
@@ -53,21 +54,19 @@ mean(treatment) # 67% treated
 summary(out_gavedum)
 
 # Giving
-
 summary(out_amountgive) # amount given. Highly skewed
 hist(out_amountgive)
-hist(out_amountgive[out_amountgive<=10])
 
 ############################################################
 ### 1. Regression for average treatment effect
 
-reg_ols <- lm(out_amountgive ~ treatment) 
-summary(reg_ols) # show results, significant at 90% but not 95% level
+reg.ols <- lm(out_amountgive ~ treatment) 
+summary(reg.ols) # show results, significant at 90% but not 95% level
 # Consistent with Table 4 of paper
-confint(reg_ols, level=0.95) # CI
+confint(reg.ols, level=0.95) # CI
 
 #probit regression
-gave_probit <- glm(out_gavedum ~ treatment,family=binomial(link='probit'))
+gave.probit <- glm(out_gavedum ~ treatment,family=binomial(link='probit'))
 #convert coef to derivative
 marginal.effect <- mean(dnorm(predict(gave_probit, type = "link")))*coef(gave_probit)
 print(marginal.effect)
@@ -85,21 +84,21 @@ hist(page18_39[page18_39_missing!=1])
 summary(perbush)
 hist(perbush[perbush_missing!=1])
 
-#LA: added that we remove ppl missing income info
-char_res <- char[ which(page18_39!=-999
+# Generate restricted dataset, dropping all those missing key covariates
+char.res <- char[ which(page18_39!=-999
                          & perbush!=-999
                          & median_hhincome!=-999), ] # drop all those with missings of key variables
 detach(char)
-attach(char_res) # attach so don't have to call each time
+attach(char.res) # attach so don't have to call each time
 
-char_res$drop <- 0 # variable telling us to drop or not
+#char_res$drop <- 0 # variable telling us to drop or not
 
 # Make threshold rule for dropping (alternatively do with random variable)
-char_res$thres <- perbush #+ 0.1*(1+perbush)^2 - 0.1*page18_39*perbush #- page18_39 - page18_39^2 + perbush^2
-summary(char_res$thres)
-char_res$drop[char_res$thres <= 0.5] <- 1
-mean(char_res$drop) # drop 23 % of obs
-char_res_d <- char_res[which(char_res$drop == 0),]
+#char_res$thres <- perbush #+ 0.1*(1+perbush)^2 - 0.1*page18_39*perbush #- page18_39 - page18_39^2 + perbush^2
+#summary(char_res$thres)
+#char_res$drop[char_res$thres <= 0.5] <- 1
+#mean(char_res$drop) # drop 23 % of obs
+#char_res_d <- char_res[which(char_res$drop == 0),]
 
 ##############################
 #Alternative rule: 
@@ -108,7 +107,7 @@ char_res_d <- char_res[which(char_res$drop == 0),]
 #
 
 ps.fcn <- function(v,c,pg,t){
-  v_t <- (v-.25)/.5
+  #v_t <- (v-.25)/.5
   v_t <- v
   ihs_pg <- log(pg + sqrt(pg ^ 2 + 1))/5
   
@@ -122,54 +121,69 @@ ps.fcn <- function(v,c,pg,t){
 plot(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,800,1),ylim=c(0,1))#a plot of the function
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,800,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,200,1))
+
 #char$mibush=char$perbush==-999
 #char$perbush[char$mibush]=.5
-char_res$ps.true <- ps.fcn(char_res$perbush,char_res$cases,char_res$hpa,char_res$treatment)
-ggplot(char_res,aes(x=ps.true))+ stat_ecdf()
+
+# Input from highly non-linear function
+char.res$ps.true <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,char.res$treatment) # hpa is highest previous contribution. cases is court cases from state which organization was involved.
+
+# Plot CDF of this nonlinear function
+ggplot(char.res,aes(x=ps.true))+ stat_ecdf()
+
+# Set seed
 set.seed(21) 
-selection <- runif(nrow(char_res)) <= char_res$ps.true
-char.censored <- char_res[selection,] #remove observations via propensity score rule
-ggplot(char_res,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
+
+# Selection rule (=1 of uniform random [0,1] is lower, so those with higher ps.true more likely to be selected)
+selection <- runif(nrow(char.res)) <= char.res$ps.true
+
+char.censored <- char.res[selection,] #remove observations via propensity score rule
+
+ggplot(char.res,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
+
 ggplot(char.censored,aes(x=ps.true)) + geom_histogram() +xlim(c(0,1))
 
 #overlap in true propensity score
 ggplot(char.censored,aes(x=ps.true,colour=factor(treatment))) + stat_ecdf()
+
 ggplot(char.censored,aes(x=ps.true,y=hpa,colour=factor(treatment))) + geom_point()
 #there is clear overlap, but clearly assymetries going on with hpa as well
+
 #################################
 
 # New regression results with dropping
 
 #jack's threshold rule
-reg_ols_drop <- lm(out_amountgive ~ treatment, data = char_res_d) 
-summary(reg_ols_drop) 
+#reg_ols_drop <- lm(out_amountgive ~ treatment, data = char_res_d) 
+#summary(reg_ols_drop) 
 
 #Luis' PS generating rule
-reg_censored <- lm(out_amountgive ~ treatment, data = char.censored) 
-summary(reg_censored) 
+reg.censored <- lm(out_amountgive ~ treatment, data = char.censored) 
+summary(reg.censored) 
 
 # Old regression results (remember to drop missings to make comparable sample)
-reg_ols_comp <- lm(out_amountgive ~ treatment, data = char_res) 
-summary(reg_ols_comp) 
-ate.true <- reg_ols_comp$coefficients[2]
+reg.ols.comp <- lm(out_amountgive ~ treatment, data = char.res) 
+summary(reg.ols.comp) 
+ate.true <- reg.ols.comp$coefficients[2]
 
 # Check overlap (propensity score)
+
 # estimate propensity score via logit regression
-ps_mod <- glm(treatment ~ page18_39 + perbush,
-              family = binomial(), data = char_res_d)
-summary(ps_mod)
+ps.mod <- glm(treatment ~ page18_39 + perbush + pwhite + pblack + median_hhincome + red0 + hpa + ltmedmra + freq + years + year5 + dormant + female + couple + nonlit,
+              family = binomial(), data = char.censored)
+summary(ps.mod)
 
 # Put propensity scores into dataframe with actual treatment
-
-ps_df <- data.frame(pr_score = predict(ps_mod),
-                     treatment = ps_mod$model$treatment)
-head(ps_df)
+ps.df <- data.frame(pr.score = predict(ps.mod),
+                     treatment = ps.mod$model$treatment)
+head(ps.df)
+ps.df$pr.score <- pmin(ps.df$pr.score,1)
 
 # Generate graph (see https://stanford.edu/~ejdemyr/r-tutorials-archive/tutorial8.html#propensity-score-estimation)
 labs <- paste("Actual treatment:", c("Treated", "Control"))
-ps_df %>%
+ps.df %>%
   mutate(treatment = ifelse(treatment == 1, labs[1], labs[2])) %>% 
-  ggplot(aes(x = pr_score), data = ps_df) +
+  ggplot(aes(x = pr.score)) +
   geom_histogram(color = "white") +
   facet_wrap(~treatment) +
   xlab("Probability of treatment") +
@@ -180,6 +194,7 @@ ps_df %>%
 #since we have some continuous covariates,
 #use the Mahalanobis distance to get conditional means
 #in a 'neighborhood' of each set of X's
+
 bias.fcn <- function(ps,treat,y, covars){
   x<- covars
   #stdize covariates to be z-scores mean 0 sd 1
@@ -211,7 +226,7 @@ bias.fcn <- function(ps,treat,y, covars){
 }
 covars.ps <- cbind(char.censored$hpa,char.censored$cases,char.censored$perbush) #Xs relevant for p-score
 char.censored$bias <- bias.fcn(char.censored$ps.true,char.censored$treatment,
-                 char.censored$out_amountgive, covars)
+                 char.censored$out_amountgive, covars.ps)
 ggplot(char.censored,aes(x=bias)) +geom_histogram(fill=I("white"),col=I("black"))
 E.bias = mean(char.censored$bias)/mean(char.censored$treatment)*(1-mean(char.censored$treatment))
 print(E.bias)
@@ -333,13 +348,68 @@ print(reg.DoubleSelection$coefficients['treatment'])
 # included in the handout, plot how the coefficient on the treatment indicator
 # changes with lambda. Interpret your findings. (See http://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html for some sample code on plotting.)
 
+# Lasso of outcome on treatment and covars
+
+
+p.fac = rep(1, ncol(covars.all)+1)
+p.fac[1]=0
+lasso.reg.pen <- glmnet(as.matrix(cbind(char.censored$treatment,covars.all)),char.censored$out_amountgive,penalty.factor = p.fac)
+
+# Plot using default plot
+plot(lasso.reg.pen, label = T, xvar = "lambda")
+
+# Plot using plotmo (more options)
+plot_glmnet(lasso.reg.pen,
+            xvar = c("lambda"),
+            label = 10, nresponse = NA, grid.col = NA, s = NA)
+
+# No option to plot path of single coefficient, so make plot ourselves
+
+lambdas <- seq(from = 0, to = 1, by = 0.01) # Range of lambdas to try
+t.coef <- coef(lasso.reg.pen,lambdas)[2,] # Pick out treatment coefficient
+ggplot(data = NULL,aes(x=lambdas, y=t.coef)) +
+  geom_line(colour="blue", size=1.5) +
+  xlab("Lambda") + ylab("Treatment coefficient")
+
+# As lambda increases, treatment effect increases as expected. Treatment effect ranges from that of full OLS 
+# controlling for covariates to simple OLS with no controls.
+
 ############################################################
 ### 4.
 
 # double machine learning to estimate the ATE. Specifically, use a LASSO or random forest to estimate regressions of Y on X and separately Y on W. Then, run a residual on
 # residual regression.
 
+# JB: Athey has made a typo here? Should be Y on X and W on X
+
+# LASSO of Y on X
+
+lasso.YX <- cv.glmnet(as.matrix(covars.all),char.censored$out_amountgive)
+coef(lasso.YX, s = "lambda.min")
+lasso.YX.res <- predict(lasso.YX ,as.matrix(covars.all),s=lasso.YX$lambda.min) - char.censored$out_amountgive # residuals
+
+summary(lasso.YX.res) # very skewed
+
+# LASSO of W on X 
+
+lasso.WX <- cv.glmnet(as.matrix(covars.all),char.censored$treatment)
+coef(lasso.WX, s = "lambda.min")
+lasso.WX.res <- predict(lasso.WX ,as.matrix(covars.all),s=lasso.WX$lambda.min) - char.censored$treatment # residuals
+summary(lasso.WX.res) # very skewed
+
+# Residual on residual regression
+
+reg.res <- lm(lasso.YX.res ~ lasso.WX.res)
+summary(reg.res)
+
 
 # Use approximate residual balancing (package: http://github.com/swager/balanceHD) to estimate ATE
+# JB: Issue with POGS installation. Haven't managed to run. http://foges.github.io/pogs/stp/r
+# POGS: https://stanford.edu/class/ee364b/projects/2014projects/reports/fougner_report.pdf
+
+tau.hat = residualBalance.ate(as.matrix(covars.all), char.censored$out_amountgive, char.censored$treatment, estimate.se = TRUE,  optimizer = "pogs")
+print(paste("true tau:", tau))
+print(paste("point estimate:", round(tau.hat[1], 2)))
+print(paste0("95% CI for tau: (", round(tau.hat[1] - 1.96 * tau.hat[2], 2), ", ", round(tau.hat[1] + 1.96 * tau.hat[2], 2), ")"))
 
 # Compare and interpret your results
