@@ -12,8 +12,8 @@
 
 # set your working directory
 
-setwd("C:\\Users\\Jack\\Documents\\Git\\Athey ML homework 1\\AtheyMLhw1") # Jack
-#setwd('/home/luis/Downloads/AtheyMLhw1') #Luis
+#setwd("C:\\Users\\Jack\\Documents\\Git\\Athey ML homework 1\\AtheyMLhw1") # Jack
+setwd('/home/luis/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -23,7 +23,8 @@ rm(list = ls())
 
 library(ggplot2)
 library(dplyr)
-
+library(reshape2)
+library(glmnet)
 # set seed
 set.seed(12345)
 
@@ -135,7 +136,6 @@ ggplot(char.censored,aes(x=ps.true)) + geom_histogram() +xlim(c(0,1))
 ggplot(char.censored,aes(x=ps.true,colour=factor(treatment))) + stat_ecdf()
 ggplot(char.censored,aes(x=ps.true,y=hpa,colour=factor(treatment))) + geom_point()
 #there is clear overlap, but clearly assymetries going on with hpa as well
-#End of Added PS Section by LA
 #################################
 
 # New regression results with dropping
@@ -151,7 +151,7 @@ summary(reg_censored)
 # Old regression results (remember to drop missings to make comparable sample)
 reg_ols_comp <- lm(out_amountgive ~ treatment, data = char_res) 
 summary(reg_ols_comp) 
-
+ate.true <- reg_ols_comp$coefficients[2]
 
 # Check overlap (propensity score)
 # estimate propensity score via logit regression
@@ -209,7 +209,7 @@ bias.fcn <- function(ps,treat,y, covars){
   
   return(bias)
 }
-covars <- cbind(char.censored$hpa,char.censored$cases,char.censored$perbush)
+covars.ps <- cbind(char.censored$hpa,char.censored$cases,char.censored$perbush) #Xs relevant for p-score
 char.censored$bias <- bias.fcn(char.censored$ps.true,char.censored$treatment,
                  char.censored$out_amountgive, covars)
 ggplot(char.censored,aes(x=bias)) +geom_histogram(fill=I("white"),col=I("black"))
@@ -221,20 +221,70 @@ print(E.bias)
 
 
 # propensity score weighting ATE
+#first, estimate the propensity score with a logit regression using all covars
+#since in this exercise we should not know the "ground truth" propensity score
+covars.all <- char.censored[,c(14:22,23:63)] #skip the state indicator used for summ stats
+ps.formula <- paste('treatment ~ ', paste(names(covars.all),collapse='+'),sep='')
+m.ps <- glm(ps.formula,
+              family = binomial(), data = char.censored)
+char.censored$ps.est <- predict(m.ps,type='response')
+summary(char.censored$ps.est)
+#compare estimated p-score w/ real p-score
+ggplot(melt(char.censored[,c('ps.true','ps.est')]),aes(x=value,colour=variable)) + geom_density(alpha=.2)
 
+char.censored$w.ate[char.censored$treatment == 1] <-  1/char.censored$ps.est[char.censored$treatment == 1]
+char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.est[char.censored$treatment == 0]))
 
-char.censored$w.ate[char.censored$treatment == 1] <-  1/char.censored$ps.true[char.censored$treatment == 1]
-char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.true[char.censored$treatment == 0]))
-
-  
-pweight.reg <- lm(out_amountgive ~ treatment, weights = w.ate, data = char.censored)
-summary(pweight.reg)
+#regular propensity score weighting
+ate.ps <- mean(char.censored$out_amountgive[char.censored$treatment==1]*
+                 char.censored$w.ate[char.censored$treatment == 1]) - 
+          mean(char.censored$out_amountgive[char.censored$treatment==0]*
+                 char.censored$w.ate[char.censored$treatment == 0]) 
+print(ate.ps)
+#gives a negative score!
 
 # direct regression analysis ATE;
+# control for Xs linearly
+ols.formula <- paste('out_amountgive ~ treatment +', paste(names(covars.all),collapse='+'),sep='')
+reg.ols <- lm(ols.formula, data=char.censored)
+print(reg.ols$coefficients['treatment'])
+#does much better; pretty close to true ATE
+
 
 # traditional double robust analysis weighting using inverse propensity score weighting; the lm command in R has a weights option.
+#changed this to sqrt(w) since lm automatically squares them
+pweight.reg <- lm(ols.formula, weights = w.ate, data = char.censored)
+summary(pweight.reg)
+print(pweight.reg$coefficients['treatment'])
+#gives a similar answer to non-weighted reg
+
 
 # lasso or regularized logistic regression (optionally try CART or randomforest --classification trees, or classification forests), to estimate the propensity scoreand re-estimate the ATE using the methods above.
+#re-estimate p-score using cross validation
+ps.m.cv <- cv.glmnet(as.matrix(covars.all),char.censored$treatment, family='binomial')
+coef(ps.m.cv,s='lambda.min')
+char.censored$ps.lasso <- predict(ps.m.cv,as.matrix(covars.all),s='lambda.min',type='response')
+#compare the method's generated p-scores
+ggplot(melt(char.censored[,c('ps.true','ps.est','ps.lasso')]),aes(x=value,colour=variable)) + geom_density(alpha=.2)
+#we get a worse p-score since it is regularized/shrunken so more concentrated
+
+#redo above methods (weighted mean, DR weights)
+char.censored$w.ate.lasso[char.censored$treatment == 1] <-  1/char.censored$ps.lasso[char.censored$treatment == 1]
+char.censored$w.ate.lasso[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.lasso[char.censored$treatment == 0]))
+
+#propensity score weighting
+ate.ps.lasso <- mean(char.censored$out_amountgive[char.censored$treatment==1]*
+                 char.censored$w.ate.lasso[char.censored$treatment == 1]) - 
+  mean(char.censored$out_amountgive[char.censored$treatment==0]*
+         char.censored$w.ate.lasso[char.censored$treatment == 0]) 
+print(ate.ps.lasso)
+#still bad
+
+#DR IPR weighting
+pweight.lasso.reg <- lm(ols.formula, weights = w.ate.lasso, data = char.censored)
+summary(pweight.reg)
+print(pweight.lasso.reg$coefficients['treatment'])
+#no gain from DR method
 
 
 # a single-equation lasso of Y on X and W to estimate the ATE. Note that there is an option to not penalize the treatment indicator. You may
@@ -242,12 +292,40 @@ summary(pweight.reg)
 #shrunk. See http://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html for
 #the syntax for setting penalties for some coefficients to 0.
 
+#straight from the website
+#set penalty coef for treatment to zero
+p.fac = rep(1, ncol(covars.all)+1)
+p.fac[1]=0
+lasso.reg <- cv.glmnet(as.matrix(cbind(char.censored$treatment,covars.all)),char.censored$out_amountgive,penalty.factor = p.fac)
+lasso.coef<-coef(lasso.reg,s='lambda.min')
+print(lasso.coef['char.censored$treatment',])
+#closer to zero, but actually the non-lassoed OLS estimate performed better
+
+
+
 
 #Next try using the Belloni-Chernozhukov-Hansen method, where you use the lasso to select variables with non-zero coefficients from the propensity equation and the
 #outcome equation, take the union of the two sets, and finally run OLS. You can either
 #use cross-validation to choose lambda in each case, or you can follow the approaches
 #suggested by BCH (those are more complicated but probably doesn't make a
 #                  difference).
+
+#use CV to get union of two sets
+#already have p-score regularized estimation
+psreg.vars<-rownames(coef(ps.m.cv,s='lambda.min'))
+psreg.vars<-psreg.vars[as.logical(coef(ps.m.cv,s='lambda.min')!=0)]
+#reduced form outcome reg
+yreg.rf.cv<-cv.glmnet(as.matrix(covars.all),char.censored$out_amountgive)
+yreg.vars<-rownames(coef(yreg.rf.cv,s='lambda.min'))
+yreg.vars<-yreg.vars[as.logical(coef(yreg.rf.cv,s='lambda.min')!=0)]
+ds.vars <- union(yreg.vars,psreg.vars)
+ds.vars <- ds.vars[-1]#remove intercept
+paste('treatment ~ ', paste(names(covars.all),collapse='+'),sep='')
+doubleselect.formula <- paste('out_amountgive ~ treatment + ',paste(ds.vars,collapse='+'),sep='')
+reg.DoubleSelection <- lm(doubleselect.formula,data=char.censored)
+summary(reg.DoubleSelection)
+print(reg.DoubleSelection$coefficients['treatment'])
+#fairly close to true ATE; still only about as good as regular OLS
 
 
 # Look at how your ATE coefficient changes with regularization
