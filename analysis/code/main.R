@@ -12,8 +12,8 @@
 
 # set your working directory
 
-setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
-#setwd('/home/luis/AtheyMLhw1') #Luis
+#setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
+setwd('/home/luis/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -26,6 +26,7 @@ library(dplyr)
 library(reshape2)
 library(glmnet)
 library(plotmo)
+library(pogs)
 library(balanceHD)
 
 # set seed
@@ -109,19 +110,22 @@ attach(char.res) # attach so don't have to call each time
 ps.fcn <- function(v,c,pg,t){
   #v_t <- (v-.25)/.5
   v_t <- v
-  ihs_pg <- log(pg + sqrt(pg ^ 2 + 1))/5
-  
-  #p<- ((2*c*(t*acos(v_t)) + (1-t)*atan(v_t^2))  - .5*exp(v_t) + t*((ihs_i)^4)/4 + (1-t)*(i/10000))/4
-  p<- (c*(acos(v_t))*atan(v_t^2)  - .5*exp(v_t))/4 + (t*((ihs_pg)) + (1-t))/2
+  #ihs_pg <- log(pg + sqrt(pg ^ 2 + 1))/5
+  #p<- (c*(acos(v_t))*atan(v_t^2)  - .5*exp(v_t))/4 + (t*((ihs_pg)) + (1-t))/2
+  ihs_pg <- log(pg + sqrt(pg ^ 2 + 1))
+  p<- (1-t)*(c+1)*(acos(v_t)*atan(v_t) )/3 + 
+      t*(.01+(-.01*ihs_pg^5 + 1*ihs_pg^3)/300)
   p<- pmin(pmax(0,p),1)
   return(p)
 }
 #story to accompany this fcn: ACLU wants to help those in trouble in "red states" but do not 
 #feel they can make a difference in really, really red states so target donors less often
-plot(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,800,1),ylim=c(0,1))#a plot of the function
-lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,800,0))
-lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,200,1))
+plot(seq(0,1,.001),ps.fcn(seq(0,1,.001),4,800,0)) #a plot of the function
+lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,800,0))
+lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,200,0))
+lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,200,0))
 
+plot(char.res$hpa, ps.fcn(0,0,char.res$hpa,1))
 #char$mibush=char$perbush==-999
 #char$perbush[char$mibush]=.5
 
@@ -299,7 +303,7 @@ print(ate.ps.lasso)
 pweight.lasso.reg <- lm(ols.formula, weights = w.ate.lasso, data = char.censored)
 summary(pweight.reg)
 print(pweight.lasso.reg$coefficients['treatment'])
-#no gain from DR method
+#DR method performs better now
 
 
 # a single-equation lasso of Y on X and W to estimate the ATE. Note that there is an option to not penalize the treatment indicator. You may
@@ -407,9 +411,10 @@ summary(reg.res)
 # JB: Issue with POGS installation. Haven't managed to run. http://foges.github.io/pogs/stp/r
 # POGS: https://stanford.edu/class/ee364b/projects/2014projects/reports/fougner_report.pdf
 
-tau.hat = residualBalance.ate(as.matrix(covars.all), char.censored$out_amountgive, char.censored$treatment, estimate.se = TRUE,  optimizer = "pogs")
-print(paste("true tau:", tau))
-print(paste("point estimate:", round(tau.hat[1], 2)))
+tau.hat = residualBalance.ate(as.matrix(covars.all), char.censored$out_amountgive,
+                              char.censored$treatment, estimate.se = TRUE,  optimizer = "pogs")
+print(paste("true tau:", ate.true)) # 0.166066838677917
+print(paste("point estimate:", round(tau.hat[1], 4))) #1.2675
 print(paste0("95% CI for tau: (", round(tau.hat[1] - 1.96 * tau.hat[2], 2), ", ", round(tau.hat[1] + 1.96 * tau.hat[2], 2), ")"))
-
+#95% CI for tau: (0.82, 1.71)
 # Compare and interpret your results
