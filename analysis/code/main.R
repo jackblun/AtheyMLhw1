@@ -273,16 +273,26 @@ summary(char.censored$ps.est)
 #compare estimated p-score w/ real p-score
 ggplot(melt(char.censored[,c('ps.true','ps.est')]),aes(x=value,colour=variable)) + geom_density(alpha=.2)
 
-char.censored$w.ate[char.censored$treatment == 1] <-  1/char.censored$ps.est[char.censored$treatment == 1]
-char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.est[char.censored$treatment == 0]))
+char.censored$w.ate[char.censored$treatment == 1] <-  1/char.censored$ps.true[char.censored$treatment == 1]
+char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.true[char.censored$treatment == 0]))
+
+
+
+#char.censored$w.ate[char.censored$treatment == 1] <- char.censored$w.ate[char.censored$treatment == 1] + 1 - mean(char.censored$w.ate[char.censored$treatment == 1]) 
+#char.censored$w.ate[char.censored$treatment == 0] <- char.censored$w.ate[char.censored$treatment == 0] + 1 - mean(char.censored$w.ate[char.censored$treatment == 0]) 
+
 
 #regular propensity score weighting
-ate.ps <- mean(char.censored$out_amountgive[char.censored$treatment==1]*
+ate.ps <- mean(char.censored$out_amountgive*(char.censored$treatment - char.censored$ps.est)/(char.censored$ps.est*(1 - char.censored$ps.est)), na.rm = T)
+  
+  char.censored$out_amountgive[char.censored$treatment==1]*
                  char.censored$w.ate[char.censored$treatment == 1],na.rm=TRUE) - 
           mean(char.censored$out_amountgive[char.censored$treatment==0]*
                  char.censored$w.ate[char.censored$treatment == 0],na.rm=TRUE) 
 print(ate.ps)
 #gives a negative score!
+
+
 
 # direct regression analysis ATE;
 # control for Xs linearly

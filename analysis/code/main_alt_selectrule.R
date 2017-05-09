@@ -115,7 +115,7 @@ summary(ps.mod)
 # We see much more likely to be treated in red states with higher perbush
 
 # Put propensity scores into dataframe with actual treatment
-char.censored$ps.est <- predict(ps.mod)
+char.censored$ps.est <- predict(ps.mod,type='response')
 
 # Check no estimated propensity scores of zero or one
 hist(char.censored$ps.est)
