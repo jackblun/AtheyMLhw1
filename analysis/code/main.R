@@ -243,10 +243,32 @@ print(E.bias)
 #first, estimate the propensity score with a logit regression using all covars
 #since in this exercise we should not know the "ground truth" propensity score
 covars.all <- char.censored[,c(14:22,23:63)] #skip the state indicator used for summ stats
-ps.formula <- paste('treatment ~ ', paste(names(covars.all),collapse='+'),sep='')
-m.ps <- glm(ps.formula,
-              family = binomial(), data = char.censored)
-char.censored$ps.est <- predict(m.ps,type='response')
+#formula to interact all covariates no interactions for missing dummies.
+#for tractability, we interact individ. covars with each other, and state vars with each other
+#create design matrix storing all features
+covars.regular <-char.censored[,c(14:22,23:44)]
+covars.missing <- char.censored[,c(45:63)]
+int.level = 2 #the degree of interaction between covariates that are not missing dummies
+covars.poly.str = paste('(', paste(names(covars.regular)[1:9],collapse='+'),')^',int.level,
+                        ' + (', paste(names(covars.regular)[11:31],collapse='+'),')^',int.level,
+                        ' + ',paste(names(covars.missing),collapse='+'),sep='') 
+#covars.poly.str = paste('(', paste(names(covars.regular),collapse='+'),')^',int.level,
+#                        ' + ',paste(names(covars.missing),collapse='+'),sep='') 
+covars.poly <-model.matrix(as.formula(paste('~ ',covars.poly.str)),data=char.censored)
+
+
+
+
+#the logit with all uninteracted covariates
+#ps.formula <- paste('treatment ~ ',paste(names(covars.all),collapse='+'))
+#m.ps <- glm(ps.formula,  family = binomial(), data = char.censored)
+
+#OLS for p-score with interacted covariates 
+#(NOTE: logit w/ interactions doesnt converge)
+ps.formula <- paste('treatment ~ ',covars.poly.str)
+m.ps <- lm(ps.formula, data = char.censored)
+char.censored$ps.est <- pmax(pmin(predict(m.ps,type='response'),1),0)
+
 summary(char.censored$ps.est)
 #compare estimated p-score w/ real p-score
 ggplot(melt(char.censored[,c('ps.true','ps.est')]),aes(x=value,colour=variable)) + geom_density(alpha=.2)
@@ -256,33 +278,48 @@ char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$p
 
 #regular propensity score weighting
 ate.ps <- mean(char.censored$out_amountgive[char.censored$treatment==1]*
-                 char.censored$w.ate[char.censored$treatment == 1]) - 
+                 char.censored$w.ate[char.censored$treatment == 1],na.rm=TRUE) - 
           mean(char.censored$out_amountgive[char.censored$treatment==0]*
-                 char.censored$w.ate[char.censored$treatment == 0]) 
+                 char.censored$w.ate[char.censored$treatment == 0],na.rm=TRUE) 
 print(ate.ps)
 #gives a negative score!
 
 # direct regression analysis ATE;
 # control for Xs linearly
-ols.formula <- paste('out_amountgive ~ treatment +', paste(names(covars.all),collapse='+'),sep='')
+#ols.formula <- paste('out_amountgive ~ treatment +', paste(names(covars.all),collapse='+'),sep='')
+#reg.ols <- lm(ols.formula, data=char.censored)
+
+#w/ full interactions
+ols.formula <- paste('out_amountgive ~ treatment +', covars.poly.str,sep='')
 reg.ols <- lm(ols.formula, data=char.censored)
 print(reg.ols$coefficients['treatment'])
 #does much better; pretty close to true ATE
 
 
-# traditional double robust analysis weighting using inverse propensity score weighting; the lm command in R has a weights option.
-#changed this to sqrt(w) since lm automatically squares them
-pweight.reg <- lm(ols.formula, weights = w.ate, data = char.censored)
+# traditional double robust analysis weighting using inverse propensity score weighting; 
+# the lm command in R has a weights option.
+pweight.reg <- lm(ols.formula, weights = w.ate, data = char.censored[is.finite(char.censored$w.ate),],na.action=na.exclude)
 summary(pweight.reg)
 print(pweight.reg$coefficients['treatment'])
+
+ATEs.classic <- cbind(ate.ps,
+                          reg.ols$coefficients['treatment'],
+                          pweight.reg$coefficients['treatment'])
+colnames(ATEs.classic) <- c("PS Weighting",'OLS w/ Controls','Traditional DR OLS w/ IPS Weights')
 #gives a similar answer to non-weighted reg
 
 
 # lasso or regularized logistic regression (optionally try CART or randomforest --classification trees, or classification forests), to estimate the propensity scoreand re-estimate the ATE using the methods above.
 #re-estimate p-score using cross validation
-ps.m.cv <- cv.glmnet(as.matrix(covars.all),char.censored$treatment, family='binomial')
-coef(ps.m.cv,s='lambda.min')
-char.censored$ps.lasso <- predict(ps.m.cv,as.matrix(covars.all),s='lambda.min',type='response')
+#for this, use the full interaction of covariates
+#ps.m.cv <- cv.glmnet(as.matrix(covars.all),char.censored$treatment, family='binomial')
+
+
+ps.m.cv <- cv.glmnet(covars.poly,char.censored$treatment, family='binomial')
+#coef(ps.m.cv,s='lambda.min')
+char.censored$ps.lasso <- predict(ps.m.cv,covars.poly,s='lambda.min',type='response')
+
+
 #compare the method's generated p-scores
 ggplot(melt(char.censored[,c('ps.true','ps.est','ps.lasso')]),aes(x=value,colour=variable)) + geom_density(alpha=.2)
 #we get a worse p-score since it is regularized/shrunken so more concentrated
@@ -304,6 +341,8 @@ pweight.lasso.reg <- lm(ols.formula, weights = w.ate.lasso, data = char.censored
 summary(pweight.reg)
 print(pweight.lasso.reg$coefficients['treatment'])
 #DR method performs better now
+ATEs.regPS <- cbind(ate.ps.lasso,pweight.lasso.reg$coefficients['treatment'])
+colnames(ATEs.regPS) <- c('Regularized PS Weighted ATE','Classic Double Robust w/ Regularized PS')
 
 
 # a single-equation lasso of Y on X and W to estimate the ATE. Note that there is an option to not penalize the treatment indicator. You may
@@ -313,17 +352,18 @@ print(pweight.lasso.reg$coefficients['treatment'])
 
 #straight from the website
 #set penalty coef for treatment to zero
-p.fac = rep(1, ncol(covars.all)+1)
+p.fac = rep(1, ncol(covars.poly)+1)
 p.fac[1]=0
-lasso.reg <- cv.glmnet(as.matrix(cbind(char.censored$treatment,covars.all)),char.censored$out_amountgive,penalty.factor = p.fac)
+lasso.reg <- cv.glmnet(cbind(char.censored$treatment,covars.poly),char.censored$out_amountgive,penalty.factor = p.fac,intercept=FALSE)
 lasso.coef<-coef(lasso.reg,s='lambda.min')
-print(lasso.coef['char.censored$treatment',])
+print(lasso.coef['',]) #the treatment coef
 #closer to zero, but actually the non-lassoed OLS estimate performed better
 
 
 
 
-#Next try using the Belloni-Chernozhukov-Hansen method, where you use the lasso to select variables with non-zero coefficients from the propensity equation and the
+#Next try using the Belloni-Chernozhukov-Hansen method, where you use the lasso to select variables 
+#with non-zero coefficients from the propensity equation and the
 #outcome equation, take the union of the two sets, and finally run OLS. You can either
 #use cross-validation to choose lambda in each case, or you can follow the approaches
 #suggested by BCH (those are more complicated but probably doesn't make a
@@ -334,12 +374,11 @@ print(lasso.coef['char.censored$treatment',])
 psreg.vars<-rownames(coef(ps.m.cv,s='lambda.min'))
 psreg.vars<-psreg.vars[as.logical(coef(ps.m.cv,s='lambda.min')!=0)]
 #reduced form outcome reg
-yreg.rf.cv<-cv.glmnet(as.matrix(covars.all),char.censored$out_amountgive)
+yreg.rf.cv<-cv.glmnet(covars.poly,char.censored$out_amountgive)
 yreg.vars<-rownames(coef(yreg.rf.cv,s='lambda.min'))
 yreg.vars<-yreg.vars[as.logical(coef(yreg.rf.cv,s='lambda.min')!=0)]
 ds.vars <- union(yreg.vars,psreg.vars)
 ds.vars <- ds.vars[-1]#remove intercept
-paste('treatment ~ ', paste(names(covars.all),collapse='+'),sep='')
 doubleselect.formula <- paste('out_amountgive ~ treatment + ',paste(ds.vars,collapse='+'),sep='')
 reg.DoubleSelection <- lm(doubleselect.formula,data=char.censored)
 summary(reg.DoubleSelection)
@@ -355,9 +394,9 @@ print(reg.DoubleSelection$coefficients['treatment'])
 # Lasso of outcome on treatment and covars
 
 
-p.fac = rep(1, ncol(covars.all)+1)
+p.fac = rep(1, ncol(covars.poly)+1)
 p.fac[1]=0
-lasso.reg.pen <- glmnet(as.matrix(cbind(char.censored$treatment,covars.all)),char.censored$out_amountgive,penalty.factor = p.fac)
+lasso.reg.pen <- glmnet(cbind(char.censored$treatment,covars.poly),char.censored$out_amountgive,penalty.factor = p.fac)
 
 # Plot using default plot
 plot(lasso.reg.pen, label = T, xvar = "lambda")
@@ -388,17 +427,17 @@ ggplot(data = NULL,aes(x=lambdas, y=t.coef)) +
 
 # LASSO of Y on X
 
-lasso.YX <- cv.glmnet(as.matrix(covars.all),char.censored$out_amountgive)
+lasso.YX <- cv.glmnet(covars.poly,char.censored$out_amountgive)
 coef(lasso.YX, s = "lambda.min")
-lasso.YX.res <- predict(lasso.YX ,as.matrix(covars.all),s=lasso.YX$lambda.min) - char.censored$out_amountgive # residuals
+lasso.YX.res <- predict(lasso.YX ,covars.poly,s=lasso.YX$lambda.min) - char.censored$out_amountgive # residuals
 
 summary(lasso.YX.res) # very skewed
 
 # LASSO of W on X 
 
-lasso.WX <- cv.glmnet(as.matrix(covars.all),char.censored$treatment)
+lasso.WX <- cv.glmnet(covars.poly,char.censored$treatment)
 coef(lasso.WX, s = "lambda.min")
-lasso.WX.res <- predict(lasso.WX ,as.matrix(covars.all),s=lasso.WX$lambda.min) - char.censored$treatment # residuals
+lasso.WX.res <- predict(lasso.WX ,covars.poly,s=lasso.WX$lambda.min) - char.censored$treatment # residuals
 summary(lasso.WX.res) # very skewed
 
 # Residual on residual regression
@@ -411,10 +450,24 @@ summary(reg.res)
 # JB: Issue with POGS installation. Haven't managed to run. http://foges.github.io/pogs/stp/r
 # POGS: https://stanford.edu/class/ee364b/projects/2014projects/reports/fougner_report.pdf
 
-tau.hat = residualBalance.ate(as.matrix(covars.all), char.censored$out_amountgive,
+tau.hat = residualBalance.ate(covars.poly, char.censored$out_amountgive,
                               char.censored$treatment, estimate.se = TRUE,  optimizer = "pogs")
 print(paste("true tau:", ate.true)) # 0.166066838677917
 print(paste("point estimate:", round(tau.hat[1], 4))) #1.2675
 print(paste0("95% CI for tau: (", round(tau.hat[1] - 1.96 * tau.hat[2], 2), ", ", round(tau.hat[1] + 1.96 * tau.hat[2], 2), ")"))
+
+ATEs.ML <- cbind(lasso.coef['',],
+                 reg.DoubleSelection$coefficients['treatment'],
+                 coef(reg.res)[2],
+                 tau.hat[1])
+colnames(ATEs.ML) <- c('Direct Lasso on Outcome',
+                       'Double Selection','Lasso Residual-on-Residual','Approx. Residual Balancing')
+sink('estimates.txt')
+print(paste('True ATE: ',ate.true))
+print(t(ATEs.classic))
+print(t(ATEs.regPS))
+print(t(ATEs.ML))
+sink()
+
 #95% CI for tau: (0.82, 1.71)
 # Compare and interpret your results
