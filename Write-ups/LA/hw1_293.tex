@@ -11,6 +11,16 @@
 
 \section{Setup}
 Here, we investigate the treatment effect of offering any sort of ``match'' promise on charitable giving. Specifically, we look at Karlan \& List's 2007 AER paper : ``Does Price Matter in Charitable Giving? Evidence from a Large-Scale Natural Field Experiment'', which randomly selected 2/3 of the population of prior donors of a large charity to recieve one of nine treatments that were a variation of promising to match any donations for a limited time via an outside donor. The control group recieved a similar letter soliciting donations with no promise of a matching donation to theirs. \\ \indent
-Our focus is on the average treatment effect (ATE) of promising to match donations on expected dollars donated in response to the solicitation.
-
+Our focus is on the average treatment effect (ATE) of promising to match donations on expected dollars donated in response to the solicitation. First, we recreate the average treatment effect documented in the paper. This is column (1) of Table 4 in the paper. We estimate an average treatment effect of an additional
+\$0.1536 from the matching promise in the solicitation, consistent with the paper. We then transform the paper's randomized experiment into an observational study by implementing a selection rule of the sample that depends on an interaction of treatment with baseline covariates of the donors. Specifically, let $K_i$ be an indicator for whether an individual is kept in the sample for the ``observational'' study, and let $\psi(X_i) = Pr(K_i=1|X_i)$ be the respondent's ``propensity'' to be kept in the sample. I define this differentially between donors depending on their assignment to treatment and control:
+\[
+  \psi(X_i)= \begin{cases}
+  	  \log(X_{3,i} + \sqrt{X_{3,i} ^ 2 + 1} & \text{if $W_i=1$} \\
+	  (X_{2,s}+1)*(\arccos(X_{1,s})*\arctan(X_{1,s}) )/3 & \text{if $W_i=0$} \\ 
+     0.5 & \text{if missing one of $X_{1,s},X_{2,s},X_{3,i}$}
+      \end{cases} 
+\]
+Where $W_i$ is a treatment indicator, $X_{3,i}$ is the highest previous donation by the donor, $X_{2,s}$ is the number of cases the charity undertook in the state $s$ from 2004-05, and $X_{2,s}$ is the state's voting share for George Bush in the 2004 presidential election.
+So a treatment group individual's selection propbability is proportional to the inverse-hyperbolic sine (IHS) of their highest previous donation, while a control group individual's selection probability is proportional to a complex trigonometric function of state characteristics, specifically, the caseload of the organization in the state and their conservative ideological tendency, as measured by the bush vote share. Those with missing covariates are given 50-50 odds of being kept in the sample.
+After performing the selection, we are left with 
 \end{document}

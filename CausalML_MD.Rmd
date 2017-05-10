@@ -25,7 +25,7 @@ library(dplyr)
 library(reshape2)
 library(glmnet)
 library(plotmo)
-#library(pogs) # Issue with pogs (Jack)
+library(pogs) # Issue with pogs (Jack)
 library(balanceHD)
 
 # set seed
@@ -48,7 +48,7 @@ reg.ols <- lm(out_amountgive ~ treatment)
 summary(reg.ols) # significant at 90% but not 95% level
 # Consistent with Table 4 of paper
 confint(reg.ols, level=0.95) # CI
-
+detach(char)
 ```
 
 
@@ -56,14 +56,6 @@ confint(reg.ols, level=0.95) # CI
 
 Drop some observations based on a selection rule
 ```{r drop, echo=TRUE}
-
-# Generate restricted dataset, dropping all those missing key covariates
-char.res <- char[ which(page18_39!=-999
-                         & perbush!=-999
-                         & median_hhincome!=-999), ] # drop all those with missings of key variables
-prop.treat <- mean(char.res$treatment)
-detach(char)
-attach(char.res) # attach so don't have to call each time
 
 #randomly censor individuals
 #via a  complex, highly nonlinear fcn  of votes 4 bush in state,
@@ -88,29 +80,35 @@ plot(seq(0,1,.001),ps.fcn(seq(0,1,.001),4,800,0),main='Plots of Selection rule F
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,800,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,200,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,200,0))
-plot(char.res$hpa, ps.fcn(0,0,char.res$hpa,1),main='Plot of Selection rule For Treatment Units',xlab='$ Amt of Highest Previous Contribution',ylab='Pr(Selected in Sample)') 
+plot(char$hpa, ps.fcn(0,0,char$hpa,1),main='Plot of Selection rule For Treatment Units',xlab='$ Amt of Highest Previous Contribution',ylab='Pr(Selected in Sample)') 
 
 # Selection rule
 # hpa is highest previous contribution. cases is court cases from state which organization was involved.
-char.res$ps.select <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,char.res$treatment) 
-
+char$ps.select <- ps.fcn(char$perbush,char$cases,char$hpa,char$treatment) 
+#deal with those missing covariates
+char$ps.select[ which(char$perbush==-999
+            | char$cases==-999
+            | char$hpa==-999)] <- 0.5
 # True propensity score (post-selection) via Bayes' theorem
-char.res$ps.select.t <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,1)
-char.res$ps.select.c <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,0)
-char.res$ps.true <- (prop.treat*char.res$ps.select.t)/(prop.treat*char.res$ps.select.t + (1 - prop.treat)*char.res$ps.select.c)
-
+prop.treat <- mean(char$treatment)
+char$ps.select.t <- ps.fcn(char$perbush,char$cases,char$hpa,1)
+char$ps.select.c <- ps.fcn(char$perbush,char$cases,char$hpa,0)
+char$ps.true <- (prop.treat*char$ps.select.t)/(prop.treat*char$ps.select.t + (1 - prop.treat)*char$ps.select.c)
+char$ps.true[ which(char$perbush==-999
+                      | char$cases==-999
+                      | char$hpa==-999)] <- prop.treat
 # Plot CDF of this nonlinear function
-ggplot(char.res,aes(x=ps.true))+ stat_ecdf()
+ggplot(char,aes(x=ps.true))+ stat_ecdf()
 
 # Set seed
 set.seed(21) 
 
 # Selection rule (=1 of uniform random [0,1] is lower, so those with higher ps.true more likely to be selected)
-selection <- runif(nrow(char.res)) <= char.res$ps.select
+selection <- runif(nrow(char)) <= char$ps.select
 
-char.censored <- char.res[selection,] #remove observations via propensity score rule
+char.censored <- char[selection,] #remove observations via propensity score rule
 
-#ggplot(char.res,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
+#ggplot(char,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
 
 ggplot(char.censored,aes(x=ps.true)) + geom_histogram() +xlim(c(0,1))
 
@@ -132,7 +130,7 @@ reg.censored <- lm(out_amountgive ~ treatment, data = char.censored)
 summary(reg.censored) 
 
 # Old regression results (remember to drop missings to make comparable sample)
-reg.ols.comp <- lm(out_amountgive ~ treatment, data = char.res) 
+reg.ols.comp <- lm(out_amountgive ~ treatment, data = char) 
 summary(reg.ols.comp) 
 ate.true <- reg.ols.comp$coefficients[2] # label this 'true' ATE
 

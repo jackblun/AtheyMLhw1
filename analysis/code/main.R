@@ -66,26 +66,7 @@ confint(reg.ols, level=0.95) # CI
 
 
 
-############################################################
-### 2. Dropping some observations
-
-# Try to find some drop of observations based on observables that changes the treatment effect
-
-# look at some potential variables
-
-summary(page18_39)
-hist(page18_39[page18_39_missing!=1])
-
-summary(perbush)
-hist(perbush[perbush_missing!=1])
-
-# Generate restricted dataset, dropping all those missing key covariates
-char.res <- char[ which(page18_39!=-999
-                         & perbush!=-999
-                         & median_hhincome!=-999), ] # drop all those with missings of key variables
-prop.treat <- mean(char.res$treatment)
 detach(char)
-attach(char.res) # attach so don't have to call each time
 
 
 ##############################
@@ -111,31 +92,37 @@ lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,800,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,200,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,200,0))
 
-plot(char.res$hpa, ps.fcn(0,0,char.res$hpa,1))
+plot(char$hpa, ps.fcn(0,0,char$hpa,1))
 #char$mibush=char$perbush==-999
 #char$perbush[char$mibush]=.5
 
 # Selection rule
-char.res$ps.select <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,char.res$treatment) # hpa is highest previous contribution. cases is court cases from state which organization was involved.
-
+char$ps.select <- ps.fcn(char$perbush,char$cases,char$hpa,char$treatment) # hpa is highest previous contribution. cases is court cases from state which organization was involved.
+#deal with those missing covariates
+char$ps.select[ which(perbush==-999
+            | cases==-999
+            | hpa==-999)] <- 0.5
 # True propensity score via Bayes' theorem
-char.res$ps.select.t <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,1)
-char.res$ps.select.c <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,0)
-char.res$ps.true <- (prop.treat*char.res$ps.select.t)/(prop.treat*char.res$ps.select.t + (1 - prop.treat)*char.res$ps.select.c)
-
+prop.treat <- mean(char$treatment)
+char$ps.select.t <- ps.fcn(char$perbush,char$cases,char$hpa,1)
+char$ps.select.c <- ps.fcn(char$perbush,char$cases,char$hpa,0)
+char$ps.true <- (prop.treat*char$ps.select.t)/(prop.treat*char$ps.select.t + (1 - prop.treat)*char$ps.select.c)
+char$ps.true[ which(perbush==-999
+                      | cases==-999
+                      | hpa==-999)] <- prop.treat
 
 # Plot CDF of this nonlinear function
-ggplot(char.res,aes(x=ps.true))+ stat_ecdf()
+ggplot(char,aes(x=ps.true))+ stat_ecdf()
 
 # Set seed
 set.seed(21) 
 
 # Selection rule (=1 of uniform random [0,1] is lower, so those with higher ps.true more likely to be selected)
-selection <- runif(nrow(char.res)) <= char.res$ps.select
+selection <- runif(nrow(char)) <= char$ps.select
 
-char.censored <- char.res[selection,] #remove observations via propensity score rule
+char.censored <- char[selection,] #remove observations via propensity score rule
 
-ggplot(char.res,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
+ggplot(char,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
 
 ggplot(char.censored,aes(x=ps.true)) + geom_histogram() +xlim(c(0,1))
 
@@ -155,7 +142,7 @@ reg.censored <- lm(out_amountgive ~ treatment, data = char.censored)
 summary(reg.censored) 
 
 # Old regression results (remember to drop missings to make comparable sample)
-reg.ols.comp <- lm(out_amountgive ~ treatment, data = char.res) 
+reg.ols.comp <- lm(out_amountgive ~ treatment, data = char) 
 summary(reg.ols.comp) 
 ate.true <- reg.ols.comp$coefficients[2]
 
