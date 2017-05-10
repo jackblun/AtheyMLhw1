@@ -5,15 +5,14 @@
 # Stanford University
 # Spring 2017
 
-
 # Section numbers correspond to assignment page
 
 ############################################################
 
 # set your working directory
 
-#setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
-setwd('/home/luis/AtheyMLhw1') #Luis
+setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
+#setwd('/home/luis/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -49,7 +48,6 @@ head(char) # Look at first few entries of each var
 # Treatment
 summary(treatment) # Anyone who got any of the 27 treatments (3 match x 3 match size x 3 reccomended amount)
 mean(treatment) # 67% treated
-
 
 # Gives at all
 summary(out_gavedum)
@@ -89,20 +87,12 @@ hist(perbush[perbush_missing!=1])
 char.res <- char[ which(page18_39!=-999
                          & perbush!=-999
                          & median_hhincome!=-999), ] # drop all those with missings of key variables
+prop.treat <- mean(char.res$treatment)
 detach(char)
 attach(char.res) # attach so don't have to call each time
 
-#char_res$drop <- 0 # variable telling us to drop or not
-
-# Make threshold rule for dropping (alternatively do with random variable)
-#char_res$thres <- perbush #+ 0.1*(1+perbush)^2 - 0.1*page18_39*perbush #- page18_39 - page18_39^2 + perbush^2
-#summary(char_res$thres)
-#char_res$drop[char_res$thres <= 0.5] <- 1
-#mean(char_res$drop) # drop 23 % of obs
-#char_res_d <- char_res[which(char_res$drop == 0),]
 
 ##############################
-#Alternative rule: 
 #randomly censor individuals
 #via a  complex, highly nonlinear fcn  of votes 4 bush in state,
 #
@@ -129,8 +119,14 @@ plot(char.res$hpa, ps.fcn(0,0,char.res$hpa,1))
 #char$mibush=char$perbush==-999
 #char$perbush[char$mibush]=.5
 
-# Input from highly non-linear function
-char.res$ps.true <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,char.res$treatment) # hpa is highest previous contribution. cases is court cases from state which organization was involved.
+# Selection rule
+char.res$ps.select <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,char.res$treatment) # hpa is highest previous contribution. cases is court cases from state which organization was involved.
+
+# True propensity score via Bayes' theorem
+char.res$ps.select.t <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,1)
+char.res$ps.select.c <- ps.fcn(char.res$perbush,char.res$cases,char.res$hpa,0)
+char.res$ps.true <- (prop.treat*char.res$ps.select.t)/(prop.treat*char.res$ps.select.t + (1 - prop.treat)*char.res$ps.select.c)
+
 
 # Plot CDF of this nonlinear function
 ggplot(char.res,aes(x=ps.true))+ stat_ecdf()
@@ -139,7 +135,7 @@ ggplot(char.res,aes(x=ps.true))+ stat_ecdf()
 set.seed(21) 
 
 # Selection rule (=1 of uniform random [0,1] is lower, so those with higher ps.true more likely to be selected)
-selection <- runif(nrow(char.res)) <= char.res$ps.true
+selection <- runif(nrow(char.res)) <= char.res$ps.select
 
 char.censored <- char.res[selection,] #remove observations via propensity score rule
 
@@ -157,9 +153,6 @@ ggplot(char.censored,aes(x=ps.true,y=hpa,colour=factor(treatment))) + geom_point
 
 # New regression results with dropping
 
-#jack's threshold rule
-#reg_ols_drop <- lm(out_amountgive ~ treatment, data = char_res_d) 
-#summary(reg_ols_drop) 
 
 #Luis' PS generating rule
 reg.censored <- lm(out_amountgive ~ treatment, data = char.censored) 
@@ -234,6 +227,7 @@ char.censored$bias <- bias.fcn(char.censored$ps.true,char.censored$treatment,
 ggplot(char.censored,aes(x=bias)) +geom_histogram(fill=I("white"),col=I("black"))
 E.bias = mean(char.censored$bias)/mean(char.censored$treatment)*(1-mean(char.censored$treatment))
 print(E.bias)
+summary(char.censored$bias)
 
 ############################################################
 ### 3.
@@ -283,12 +277,8 @@ char.censored$w.ate[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$p
 
 
 #regular propensity score weighting
-ate.ps <- mean(char.censored$out_amountgive*(char.censored$treatment - char.censored$ps.est)/(char.censored$ps.est*(1 - char.censored$ps.est)), na.rm = T)
-  
-  char.censored$out_amountgive[char.censored$treatment==1]*
-                 char.censored$w.ate[char.censored$treatment == 1],na.rm=TRUE) - 
-          mean(char.censored$out_amountgive[char.censored$treatment==0]*
-                 char.censored$w.ate[char.censored$treatment == 0],na.rm=TRUE) 
+ate.ps <- mean(char.censored$out_amountgive*(char.censored$treatment 
+               - char.censored$ps.est)/(char.censored$ps.est*(1 - char.censored$ps.est)), na.rm = T)
 print(ate.ps)
 #gives a negative score!
 

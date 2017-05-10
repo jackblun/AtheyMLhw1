@@ -1,0 +1,73 @@
+---
+title: "Untitled"
+author: "Jack Blundell"
+date: "May 9, 2017"
+output: html_document
+---
+
+## 4.
+
+Double machine learning to estimate ATE
+
+```{r double ml, echo=TRUE}
+
+# LASSO of Y on X
+
+lasso.YX <- cv.glmnet(covars.poly,char.censored$out_amountgive)
+#coef(lasso.YX, s = "lambda.min")
+lasso.YX.res <- predict(lasso.YX ,covars.poly,s=lasso.YX$lambda.min) - char.censored$out_amountgive # residuals
+
+summary(lasso.YX.res) # very skewed
+
+# LASSO of W on X 
+
+lasso.WX <- cv.glmnet(covars.poly,char.censored$treatment)
+#coef(lasso.WX, s = "lambda.min")
+lasso.WX.res <- predict(lasso.WX ,covars.poly,s=lasso.WX$lambda.min) - char.censored$treatment # residuals
+summary(lasso.WX.res) # very skewed
+
+# Residual on residual regression
+
+reg.res <- lm(lasso.YX.res ~ lasso.WX.res)
+summary(reg.res)
+
+```
+
+Approximate residual balancing
+
+```{r resid balance, echo=TRUE, eval= FALSE}
+
+tau.hat = residualBalance.ate(covars.poly, char.censored$out_amountgive,
+                              char.censored$treatment, estimate.se = TRUE,  optimizer = "pogs")
+print(paste("true tau:", ate.true)) # 0.166066838677917
+print(paste("point estimate:", round(tau.hat[1], 4))) #1.2675
+print(paste0("95% CI for tau: (", round(tau.hat[1] - 1.96 * tau.hat[2], 2), ", ", round(tau.hat[1] + 1.96 * tau.hat[2], 2), ")"))
+
+```
+
+``` {r save LA, eval = FALSE}
+ATEs.ML <- cbind(lasso.coef['',],
+                 reg.DoubleSelection$coefficients['treatment'],
+                 coef(reg.res)[2],
+                 tau.hat[1])
+colnames(ATEs.ML) <- c('Direct Lasso on Outcome',
+                       'Double Selection','Lasso Residual-on-Residual','Approx. Residual Balancing')
+#sink('estimates.txt')
+```
+
+``` {r save JB}
+ATEs.ML <- cbind(lasso.coef['',],
+                 reg.DoubleSelection$coefficients['treatment'],
+                 coef(reg.res)[2])
+colnames(ATEs.ML) <- c('Direct Lasso on Outcome',
+                       'Double Selection','Lasso Residual-on-Residual')
+#sink('estimates.txt')
+```
+# Print results for comparison
+```{r res}
+print(paste('True ATE: ',ate.true))
+print(t(ATEs.classic))
+print(t(ATEs.regPS))
+print(t(ATEs.ML))
+#sink()
+```
