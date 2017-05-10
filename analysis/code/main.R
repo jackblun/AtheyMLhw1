@@ -11,8 +11,8 @@
 
 # set your working directory
 
-setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
-#setwd('/home/luis/AtheyMLhw1') #Luis
+#setwd("C:/Users/Jack/Documents/Git/Athey ML homework 1/AtheyMLhw1") # Jack
+setwd('/home/luis/AtheyMLhw1') #Luis
 # clear things in RStudio
 
 rm(list = ls())
@@ -64,11 +64,7 @@ summary(reg.ols) # show results, significant at 90% but not 95% level
 # Consistent with Table 4 of paper
 confint(reg.ols, level=0.95) # CI
 
-#probit regression
-gave.probit <- glm(out_gavedum ~ treatment,family=binomial(link='probit'))
-#convert coef to derivative
-marginal.effect <- mean(dnorm(predict(gave_probit, type = "link")))*coef(gave_probit)
-print(marginal.effect)
+
 
 ############################################################
 ### 2. Dropping some observations
@@ -315,10 +311,9 @@ colnames(ATEs.classic) <- c("PS Weighting",'OLS w/ Controls','Traditional DR OLS
 #ps.m.cv <- cv.glmnet(as.matrix(covars.all),char.censored$treatment, family='binomial')
 
 
-ps.m.cv <- cv.glmnet(covars.poly,char.censored$treatment, family='binomial')
+ps.m.cv <- cv.glmnet(covars.poly,char.censored$treatment)
 #coef(ps.m.cv,s='lambda.min')
-char.censored$ps.lasso <- predict(ps.m.cv,covars.poly,s='lambda.min',type='response')
-
+char.censored$ps.lasso <-  pmax(pmin(predict(ps.m.cv,type='response',covars.poly,s=ps.m.cv$lambda.min),1),0)
 
 #compare the method's generated p-scores
 ggplot(melt(char.censored[,c('ps.true','ps.est','ps.lasso')]),aes(x=value,colour=variable)) + geom_density(alpha=.2)
@@ -329,16 +324,14 @@ char.censored$w.ate.lasso[char.censored$treatment == 1] <-  1/char.censored$ps.l
 char.censored$w.ate.lasso[char.censored$treatment == 0] <-  ( 1 / (1 - char.censored$ps.lasso[char.censored$treatment == 0]))
 
 #propensity score weighting
-ate.ps.lasso <- mean(char.censored$out_amountgive[char.censored$treatment==1]*
-                 char.censored$w.ate.lasso[char.censored$treatment == 1]) - 
-  mean(char.censored$out_amountgive[char.censored$treatment==0]*
-         char.censored$w.ate.lasso[char.censored$treatment == 0]) 
+ate.ps.lasso <- mean(char.censored$out_amountgive*(char.censored$treatment 
+                                             - char.censored$ps.lasso)/(char.censored$ps.lasso*(1 - char.censored$ps.lasso)), na.rm = T)
 print(ate.ps.lasso)
-#still bad
+#Not as good as regular
 
 #DR IPR weighting
-pweight.lasso.reg <- lm(ols.formula, weights = w.ate.lasso, data = char.censored)
-summary(pweight.reg)
+pweight.lasso.reg <- lm(ols.formula, weights = w.ate.lasso, data = char.censored[is.finite(char.censored$w.ate.lasso),],na.action=na.exclude)
+#summary(pweight.reg)
 print(pweight.lasso.reg$coefficients['treatment'])
 #DR method performs better now
 ATEs.regPS <- cbind(ate.ps.lasso,pweight.lasso.reg$coefficients['treatment'])
