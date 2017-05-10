@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.6)  10 MAY 2017 14:29
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.6)  10 MAY 2017 15:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -264,40 +264,45 @@ LaTeX Info: Redefining \nameref on input line 7.
 \openout3 = `hw1_293.out'.
 
 \c@lstlisting=\count118
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 11.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 12.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <8> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 11.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 12.
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <6> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 11.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 12.
 
-Overfull \hbox (42.48495pt too wide) detected at line 23
+Overfull \hbox (76.81377pt too wide) detected at line 23
 \OML/cmm/m/it/10  \OT1/cmr/m/n/10 (\OML/cmm/m/it/10 X[]\OT1/cmr/m/n/10 ) = []
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 26.
 [1
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}] [2]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 26.
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+Overfull \hbox (53.11964pt too wide) in paragraph at lines 31--31
+[] 
+ []
+
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 35.
+[2]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 35.
  (./hw1_293.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 26.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 26.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 35.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 35.
 Package rerunfilecheck Info: File `hw1_293.out' has not changed.
 (rerunfilecheck)             Checksum: 418AB4A37E48B3E8E8FD064FADA026E2;40.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 26.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 35.
  ) 
 Here is how much of TeX's memory you used:
- 6033 strings out of 493029
- 88205 string characters out of 6136235
+ 6034 strings out of 493029
+ 88208 string characters out of 6136235
  174039 words of memory out of 5000000
- 9553 multiletter control sequences out of 15000+600000
+ 9554 multiletter control sequences out of 15000+600000
  8408 words of font info for 31 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 31i,12n,32p,616b,328s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 31i,12n,32p,641b,326s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texl
@@ -309,7 +314,7 @@ ublic/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
 sfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
 m/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
 6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
-Output written on hw1_293.pdf (2 pages, 124786 bytes).
+Output written on hw1_293.pdf (2 pages, 127502 bytes).
 PDF statistics:
  71 PDF objects out of 1000 (max. 8388607)
  54 compressed objects within 1 object stream

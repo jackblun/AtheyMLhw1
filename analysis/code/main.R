@@ -117,6 +117,15 @@ ggplot(char,aes(x=ps.true))+ stat_ecdf()
 # Set seed
 set.seed(21) 
 
+#replace -999s with 0s (since there are already missing dummies)
+for (v in names(char)){
+  mi_v <- paste(v,'_missing',sep='') 
+  if (mi_v %in% names(char)){
+    print(paste('fixing',v))
+    char[(char[,mi_v]==1),v]<-0
+  }
+}
+
 # Selection rule (=1 of uniform random [0,1] is lower, so those with higher ps.true more likely to be selected)
 selection <- runif(nrow(char)) <= char$ps.select
 

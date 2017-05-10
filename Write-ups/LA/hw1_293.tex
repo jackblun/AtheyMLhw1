@@ -5,6 +5,7 @@
 \usepackage{enumerate}
 \usepackage{listings}
 \begin{document}
+\newcommand{\ihs}{\mathrm{arcsinh}}
 \title{ML Techniques to Recover Treatment Effects from Karlan and List (2007) \\ HW1, Econ 293}
 \author{Luis Armona\footnote{Coding done in colloboration with Jack Blundell} \\ \href{mailto:larmona@stanford.edu}{larmona@stanford.edu} }
 \maketitle
@@ -15,12 +16,20 @@ Our focus is on the average treatment effect (ATE) of promising to match donatio
 \$0.1536 from the matching promise in the solicitation, consistent with the paper. We then transform the paper's randomized experiment into an observational study by implementing a selection rule of the sample that depends on an interaction of treatment with baseline covariates of the donors. Specifically, let $K_i$ be an indicator for whether an individual is kept in the sample for the ``observational'' study, and let $\psi(X_i) = Pr(K_i=1|X_i)$ be the respondent's ``propensity'' to be kept in the sample. I define this differentially between donors depending on their assignment to treatment and control:
 \[
   \psi(X_i)= \begin{cases}
-  	  \log(X_{3,i} + \sqrt{X_{3,i} ^ 2 + 1} & \text{if $W_i=1$} \\
+  	  (.01 + -0.01*\ihs(X_{3,i})^5 + \ihs(X_{3,i})^3)/300 & \text{if $W_i=1$} \\
 	  (X_{2,s}+1)*(\arccos(X_{1,s})*\arctan(X_{1,s}) )/3 & \text{if $W_i=0$} \\ 
      0.5 & \text{if missing one of $X_{1,s},X_{2,s},X_{3,i}$}
       \end{cases} 
 \]
-Where $W_i$ is a treatment indicator, $X_{3,i}$ is the highest previous donation by the donor, $X_{2,s}$ is the number of cases the charity undertook in the state $s$ from 2004-05, and $X_{2,s}$ is the state's voting share for George Bush in the 2004 presidential election.
+Where $W_i$ is a treatment indicator, $X_{3,i}$ is the highest previous donation by the donor, $X_{2,s}$ is the number of cases the charity undertook in the state $s$ from 2004-05, and $X_{2,s}$ is the state's voting share for George Bush in the 2004 presidential election, and $\ihs$ is the inverse hyperbolic sine function (e.g. $\ihs(X) = \log(X_{3,i} + \sqrt{X_{3,i} ^ 2 + 1}$).
 So a treatment group individual's selection propbability is proportional to the inverse-hyperbolic sine (IHS) of their highest previous donation, while a control group individual's selection probability is proportional to a complex trigonometric function of state characteristics, specifically, the caseload of the organization in the state and their conservative ideological tendency, as measured by the bush vote share. Those with missing covariates are given 50-50 odds of being kept in the sample.
-After performing the selection, we are left with 
+
+From our selection rule, we can directly use Bayes' rule to back out the true propensity of treatment score, conditional on the covariates,$X_i$. for the non-random selected subsample. Specifically, the propensity score is:
+\begin{align*}
+\rho(X_i) = P(W_i=1|K_i=1) &= \frac{P(K_i=1|W_i=1)P(W_i=1) }{P(K_i=1|W_i=1)P(W_i=1) + P(K_i=1|W_i=0)P(W_i=0) } \\
+ &= \frac{\psi(X_i|W_i=1)\frac{2}{3}}{ \psi(X_i|W_i=1)\frac{2}{3} + \psi(X_i|W_i=0)\frac{1}{3}}
+\end{align*}
+and $\rho(X_i)=\frac{2}{3}$ for those with missing relevant covariates. implicitly
+
+After performing the selection, we are left with 15,169 observations. A naive regression on an intercept and treatment indicator yields a treatment effect of 0.403, so about 3 times larger in magnitude. This is at least in part due to the selection rule of keeping only treatment individuals who in the past donated larger amounts (and hence were more likely to donate large amounts in response to the treatment, regardless of the contents of the solicitation).
 \end{document}

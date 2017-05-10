@@ -100,6 +100,15 @@ char$ps.true[ which(char$perbush==-999
 # Plot CDF of this nonlinear function
 ggplot(char,aes(x=ps.true))+ stat_ecdf()
 
+
+#replace -999s with 0s (since there are already missing dummies)
+for (v in names(char)){
+  mi_v <- paste(v,'_missing',sep='') 
+  if (mi_v %in% names(char)){
+    char[(char[,mi_v]==1),v]<-0
+  }
+}
+
 # Set seed
 set.seed(21) 
 
@@ -108,9 +117,7 @@ selection <- runif(nrow(char)) <= char$ps.select
 
 char.censored <- char[selection,] #remove observations via propensity score rule
 
-#ggplot(char,aes(x=perbush)) + geom_histogram()+xlim(c(0,1))
-
-ggplot(char.censored,aes(x=ps.true)) + geom_histogram() +xlim(c(0,1))
+ggplot(char.censored,aes(x=ps.true)) + geom_histogram(fill=I("white"),col=I("black")) +xlim(c(0,1))
 
 #overlap in true propensity score
 ggplot(char.censored,aes(x=ps.true,colour=factor(treatment))) + stat_ecdf()
@@ -391,7 +398,7 @@ colnames(ATEs.ML) <- c('Direct Lasso on Outcome',
 #sink('estimates.txt')
 ```
 
-``` {r save JB}
+``` {r save JB, eval=FALSE}
 ATEs.ML <- cbind(lasso.coef['',],
                  reg.DoubleSelection$coefficients['treatment'],
                  coef(reg.res)[2])
