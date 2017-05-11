@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.6)  10 MAY 2017 17:30
+This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015/Debian) (preloaded format=pdflatex 2016.9.6)  10 MAY 2017 20:50
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -261,27 +261,31 @@ Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
 \rotFPbot=\skip48
 \rot@float@box=\box30
 \rot@mess@toks=\toks22
-) (./hw1_293.aux)
+)
+(/usr/share/texlive/texmf-dist/tex/latex/threeparttable/threeparttable.sty
+Package: threeparttable 2003/06/13  v 3.0
+\@tempboxb=\box31
+)
+(./hw1_293.aux)
 \openout1 = `hw1_293.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-\AtBeginShipoutBox=\box31
-Package hyperref Info: Link coloring OFF on input line 10.
-
-(/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 11.
+LaTeX Font Info:    ... okay on input line 11.
+\AtBeginShipoutBox=\box32
+Package hyperref Info: Link coloring OFF on input line 11.
+ (/usr/share/texlive/texmf-dist/tex/latex/hyperref/nameref.sty
 Package: nameref 2012/10/27 v2.43 Cross-referencing by name of section
 
 (/usr/share/texlive/texmf-dist/tex/generic/oberdiek/gettitlestring.sty
@@ -289,9 +293,9 @@ Package: gettitlestring 2010/12/03 v1.4 Cleanup title references (HO)
 )
 \c@section@level=\count119
 )
-LaTeX Info: Redefining \ref on input line 10.
-LaTeX Info: Redefining \pageref on input line 10.
-LaTeX Info: Redefining \nameref on input line 10.
+LaTeX Info: Redefining \ref on input line 11.
+LaTeX Info: Redefining \pageref on input line 11.
+LaTeX Info: Redefining \nameref on input line 11.
 
 (./hw1_293.out) (./hw1_293.out)
 \@outlinefile=\write3
@@ -303,7 +307,7 @@ LaTeX Info: Redefining \nameref on input line 10.
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count121
 \scratchdimen=\dimen122
-\scratchbox=\box32
+\scratchbox=\box33
 \nofMPsegments=\count122
 \nofMParguments=\count123
 \everyMPshowfont=\toks23
@@ -327,89 +331,103 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Font Info:    Try loading font information for OMS+cmr on input line 15.
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 16.
 
 (/usr/share/texlive/texmf-dist/tex/latex/base/omscmr.fd
 File: omscmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <8> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 15.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 16.
 LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <6> not available
-(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 15.
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 16.
 
-Overfull \hbox (76.81377pt too wide) detected at line 26
+Overfull \hbox (76.81377pt too wide) detected at line 27
 \OML/cmm/m/it/10  \OT1/cmr/m/n/10 (\OML/cmm/m/it/10 X[]\OT1/cmr/m/n/10 ) = []
  []
 
 [1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-Overfull \hbox (53.11964pt too wide) in paragraph at lines 34--34
+Overfull \hbox (53.11964pt too wide) in paragraph at lines 35--35
 [] 
  []
 
-[2] [3] <../figures/select_c.png, id=46, 543.53062pt x 411.03563pt>
+[2] [3]
+Overfull \hbox (2.5284pt too wide) in paragraph at lines 54--55
+[]\OT1/cmr/m/n/10 In ad-di-tion, we per-form a dou-ble ma-chine learn-ing (lass
+o residual-on-residual)
+ []
+
+[4] <../figures/select_c.png, id=58, 543.53062pt x 411.03563pt>
 File: ../figures/select_c.png Graphic file (type png)
 
 <use ../figures/select_c.png>
-Package pdftex.def Info: ../figures/select_c.png used on input line 56.
+Package pdftex.def Info: ../figures/select_c.png used on input line 94.
 (pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
 
-<../figures/select_t.png, id=47, 543.53062pt x 411.03563pt>
+<../figures/select_t.png, id=59, 543.53062pt x 411.03563pt>
 File: ../figures/select_t.png Graphic file (type png)
 
 <use ../figures/select_t.png>
-Package pdftex.def Info: ../figures/select_t.png used on input line 62.
+Package pdftex.def Info: ../figures/select_t.png used on input line 101.
 (pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
 
-<../figures/pscores.png, id=48, 543.53062pt x 411.03563pt>
+<../figures/pscores.png, id=60, 543.53062pt x 411.03563pt>
 File: ../figures/pscores.png Graphic file (type png)
 
 <use ../figures/pscores.png>
-Package pdftex.def Info: ../figures/pscores.png used on input line 69.
+Package pdftex.def Info: ../figures/pscores.png used on input line 108.
 (pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
 
-<../figures/overlap.png, id=49, 543.53062pt x 411.03563pt>
+<../figures/overlap.png, id=61, 543.53062pt x 411.03563pt>
 File: ../figures/overlap.png Graphic file (type png)
 
 <use ../figures/overlap.png>
-Package pdftex.def Info: ../figures/overlap.png used on input line 76.
+Package pdftex.def Info: ../figures/overlap.png used on input line 115.
 (pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
 
-<../figures/bias.png, id=50, 543.53062pt x 411.03563pt>
+<../figures/bias.png, id=62, 543.53062pt x 411.03563pt>
 File: ../figures/bias.png Graphic file (type png)
 
 <use ../figures/bias.png>
-Package pdftex.def Info: ../figures/bias.png used on input line 83.
+Package pdftex.def Info: ../figures/bias.png used on input line 122.
 (pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
 
-<../figures/pscore_ests.png, id=51, 543.53062pt x 411.03563pt>
+<../figures/pscore_ests.png, id=63, 543.53062pt x 411.03563pt>
 File: ../figures/pscore_ests.png Graphic file (type png)
 
 <use ../figures/pscore_ests.png>
-Package pdftex.def Info: ../figures/pscore_ests.png used on input line 90.
+Package pdftex.def Info: ../figures/pscore_ests.png used on input line 129.
 (pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 93.
- [4] [5 <../figures/select_c.png>] [6 <../figures/select_t.png>] [7 <../figures
-/pscores.png>] [8 <../figures/overlap.png (PNG copy)>] [9 <../figures/bias.png>
-] [10 <../figures/pscore_ests.png (PNG copy)>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 93.
 
-(./hw1_293.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 93.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 93.
+<../figures/treat_coef_lasso.png, id=64, 543.53062pt x 411.03563pt>
+File: ../figures/treat_coef_lasso.png Graphic file (type png)
+
+<use ../figures/treat_coef_lasso.png>
+Package pdftex.def Info: ../figures/treat_coef_lasso.png used on input line 136
+.
+(pdftex.def)             Requested size: 543.52928pt x 411.03462pt.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 139.
+ [5] [6 <../figures/select_c.png>]
+[7 <../figures/select_t.png>] [8 <../figures/pscores.png>] [9 <../figures/overl
+ap.png (PNG copy)>] [10 <../figures/bias.png>] [11 <../figures/pscore_ests.png 
+(PNG copy)>] [12 <../figures/treat_coef_lasso.png (PNG copy)>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 139.
+ (./hw1_293.aux)
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 139.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 139.
 Package rerunfilecheck Info: File `hw1_293.out' has not changed.
 (rerunfilecheck)             Checksum: 8A21D35F2BF951523B1F038CC2410DD9;93.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 93.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 139.
  ) 
 Here is how much of TeX's memory you used:
- 7018 strings out of 493029
- 101908 string characters out of 6136235
- 195636 words of memory out of 5000000
- 10479 multiletter control sequences out of 15000+600000
- 8754 words of font info for 32 fonts, out of 8000000 for 9000
+ 7105 strings out of 493029
+ 103203 string characters out of 6136235
+ 198922 words of memory out of 5000000
+ 10549 multiletter control sequences out of 15000+600000
+ 10236 words of font info for 37 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 31i,12n,32p,1568b,340s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 31i,12n,32p,2767b,340s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></us
 r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/shar
 e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texl
@@ -417,15 +435,18 @@ ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/tex
 mf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist
 /fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/
 type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/p
-ublic/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
-sfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
-6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb><
-/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hw1_293.pdf (10 pages, 268482 bytes).
+ublic/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.p
+fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></u
+sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></usr/shar
+e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/share/texlive/tex
+mf-dist/fonts/type1/public/amsfonts/cm/cmti9.pfb>
+Output written on hw1_293.pdf (12 pages, 332671 bytes).
 PDF statistics:
- 135 PDF objects out of 1000 (max. 8388607)
- 99 compressed objects within 1 object stream
- 17 named destinations out of 1000 (max. 500000)
- 47 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 165 PDF objects out of 1000 (max. 8388607)
+ 122 compressed objects within 2 object streams
+ 24 named destinations out of 1000 (max. 500000)
+ 52 words of extra memory for PDF output out of 10000 (max. 10000000)
 
