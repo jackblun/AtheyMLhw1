@@ -91,8 +91,10 @@ plot(seq(0,1,.001),ps.fcn(seq(0,1,.001),4,800,0)) #a plot of the function
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),3,800,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),2,200,0))
 lines(seq(0,1,.001),ps.fcn(seq(0,1,.001),1,200,0))
+jpeg(file='select_c')
 
 plot(char$hpa, ps.fcn(0,0,char$hpa,1))
+jpeg(file='select_t')
 #char$mibush=char$perbush==-999
 #char$perbush[char$mibush]=.5
 
